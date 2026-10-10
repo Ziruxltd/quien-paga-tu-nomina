@@ -1,0 +1,36 @@
+---
+import { GRUPOS, PRESETS, TOGGLES } from '../data/grupos';
+
+const imv = GRUPOS.find((g) => g.id === 'imv')!;
+const fmt = (x: number) => x.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+---
+
+<section aria-labelledby="h-sup">
+  <h2 id="h-sup">Juega con los supuestos</h2>
+  <p>Cada interruptor añade o quita un grupo del cálculo. Así ves cuánto pesa cada decisión.</p>
+  <div class="presets" role="group" aria-label="Escenarios rápidos">
+    {Object.entries(PRESETS).map(([id, p]) => <button type="button" data-preset={id}>{p.label}</button>)}
+  </div>
+  <div class="panel">
+    {TOGGLES.map((t) => (
+      <label class:list={['toggle', { privtg: t.lado === 'priv' }]}>
+        <input type="checkbox" id={t.key} checked />
+        <span class="t"><b>{t.titulo}</b><small>{t.detalle}</small></span>
+      </label>
+    ))}
+    <div class="toggle" style="cursor:default">
+      <input type="checkbox" id="tImv" checked aria-label="Contar Ingreso Mínimo Vital" />
+      <span class="t"><b>Contar Ingreso Mínimo Vital</b><small>¿Cuento un perceptor por hogar o a todas las personas del hogar?</small>
+        <span class="seg" role="group" aria-label="Forma de contar el IMV">
+          <button type="button" id="imvH" aria-pressed="true">Hogares · {fmt(imv.v)} M</button>
+          <button type="button" id="imvP" aria-pressed="false">Personas · {fmt(imv.vP!)} M</button>
+        </span>
+      </span>
+    </div>
+    <div class="slider">
+      <label for="sOver"><span>Descuento por doble conteo</span><span class="num" id="vOver">0,0 M</span></label>
+      <input type="range" id="sOver" min="0" max="1.5" step="0.1" value="0" />
+      <small>Personas que aparecen en dos grupos (pensionista que trabaja, IMV con empleo, parado con trabajo parcial). No hay un dato oficial: es un supuesto. Se resta del lado público y del total.</small>
+    </div>
+  </div>
+</section>

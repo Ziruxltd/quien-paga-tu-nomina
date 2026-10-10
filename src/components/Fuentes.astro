@@ -1,0 +1,10 @@
+---
+import { FUENTES } from '../data/grupos';
+---
+
+<section aria-labelledby="h-src">
+  <h2 id="h-src">Fuentes</h2>
+  <ul class="sources">
+    {FUENTES.map((f) => <li><a href={f.url} target="_blank" rel="noopener">{f.texto}</a></li>)}
+  </ul>
+</section>

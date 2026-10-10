@@ -1,0 +1,30 @@
+---
+import Base from '../layouts/Base.astro';
+import Cabecera from '../components/Cabecera.astro';
+import Resultado from '../components/Resultado.astro';
+import Supuestos from '../components/Supuestos.astro';
+import Desglose from '../components/Desglose.astro';
+import Calculo from '../components/Calculo.astro';
+import Advertencias from '../components/Advertencias.astro';
+import Fuentes from '../components/Fuentes.astro';
+---
+
+<Base
+  title="¿Quién paga tu nómina?"
+  description="Estimación interactiva de cuánta gente en España vive de un ingreso público y cuánta de uno privado."
+>
+  <div class="wrap">
+    <Cabecera />
+    <Resultado />
+    <Supuestos />
+    <Desglose />
+    <Calculo />
+    <Advertencias />
+    <Fuentes />
+    <footer>Elaborado el 10 de octubre de 2026 con los últimos datos publicados. Cifras redondeadas; las sumas pueden no cuadrar exactamente.</footer>
+  </div>
+</Base>
+
+<script>
+  import '../scripts/estimador';
+</script>

@@ -1,0 +1,306 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>¿Quién paga tu nómina?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: una columna estrecha tipo informe estadístico; barra 100% como protagonista, panel de supuestos debajo */
+:root{
+  --bg:#f6f7f8; --surface:#ffffff; --fg:#1d2329; --muted:#5d6873; --line:#dde2e7;
+  --pub:#2c5f8f; --pub-soft:#d6e3f0; --priv:#b8761f; --priv-soft:#f3e3cb; --warn:#9a3d2a; --warn-soft:#f6e1da;
+  --f-display:"Archivo Narrow","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-data:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#13171b; --surface:#1b2026; --fg:#e7eaed; --muted:#9aa5b0; --line:#2c333b;
+  --pub:#79a9d8; --pub-soft:#22364a; --priv:#e0a85a; --priv-soft:#3f3020; --warn:#e58c74; --warn-soft:#3d2620; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#13171b; --surface:#1b2026; --fg:#e7eaed; --muted:#9aa5b0; --line:#2c333b;
+  --pub:#79a9d8; --pub-soft:#22364a; --priv:#e0a85a; --priv-soft:#3f3020; --warn:#e58c74; --warn-soft:#3d2620; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.55;margin:0}
+.wrap{max-width:760px;margin:0 auto;padding-inline:16px;padding-block:28px 56px;display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(2rem,6vw,2.8rem);font-weight:700}
+h2{font-size:1.5rem;font-weight:600}
+h3{font-size:1.1rem;font-weight:600}
+p{margin:0;max-width:65ch}
+.eyebrow{font-family:var(--f-data);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.num{font-family:var(--f-data);font-variant-numeric:tabular-nums}
+section{display:flex;flex-direction:column;gap:16px}
+header{display:flex;flex-direction:column;gap:12px}
+.lede{color:var(--muted);font-size:1.05rem}
+.badge{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;background:var(--warn-soft);color:var(--warn);font-weight:600;font-size:.85rem;padding:4px 10px;border-radius:999px}
+
+/* resultado */
+.result{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:18px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.side{display:flex;flex-direction:column;gap:2px;min-width:0}
+.side.priv{text-align:right}
+.pct{font-family:var(--f-display);font-weight:700;font-size:clamp(2.6rem,11vw,4rem);line-height:1}
+.side.pub .pct{color:var(--pub)} .side.priv .pct{color:var(--priv)}
+.side .lbl{font-weight:600}
+.side .abs{color:var(--muted);font-size:.9rem}
+.bar100{display:flex;height:44px;border-radius:6px;overflow:hidden;background:var(--line)}
+.bar100 div{transition:flex-basis .5s ease;min-width:0}
+.bar100 .b-pub{background:var(--pub)} .bar100 .b-priv{background:var(--priv)}
+.midline{position:relative;height:16px;font-family:var(--f-data);font-size:.7rem;color:var(--muted)}
+.midline span{position:absolute;left:50%;transform:translateX(-50%)}
+.midline::before{content:"";position:absolute;left:50%;top:-50px;height:46px;border-left:1px dashed var(--fg);opacity:.45}
+.ratio{color:var(--muted);font-size:.95rem}
+.ratio strong{color:var(--fg)}
+
+/* controles */
+.panel{display:flex;flex-direction:column;gap:10px}
+.toggle{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:8px;cursor:pointer}
+.toggle input{margin-top:4px;width:18px;height:18px;flex:none;accent-color:var(--pub)}
+.toggle.privtg input{accent-color:var(--priv)}
+.toggle .t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.toggle .t b{font-weight:600}
+.toggle .t small{color:var(--muted);font-size:.85rem}
+.toggle:focus-within{outline:2px solid var(--pub);outline-offset:2px}
+.seg{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.seg button{font:inherit;font-size:.85rem;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--fg);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--pub);border-color:var(--pub);color:var(--surface)}
+.seg button:focus-visible{outline:2px solid var(--pub);outline-offset:2px}
+.slider{padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;gap:8px}
+.slider label{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-weight:600}
+.slider input{width:100%;accent-color:var(--warn)}
+.slider small{color:var(--muted);font-size:.85rem}
+.presets{display:flex;gap:8px;flex-wrap:wrap}
+.presets button{font:inherit;font-weight:600;font-size:.9rem;padding:8px 14px;border-radius:6px;border:1px solid var(--fg);background:transparent;color:var(--fg);cursor:pointer}
+.presets button:hover{background:var(--fg);color:var(--bg)}
+.presets button:focus-visible{outline:2px solid var(--pub);outline-offset:2px}
+
+/* desglose */
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:baseline}
+.rows{display:flex;flex-direction:column;gap:10px}
+.row{display:grid;grid-template-columns:minmax(0,1fr);gap:4px;transition:opacity .3s}
+.row.off{opacity:.35}
+.row .top{display:flex;justify-content:space-between;gap:12px;font-size:.92rem}
+.row .top span:first-child{min-width:0}
+.row .track{height:14px;background:var(--line);border-radius:3px;overflow:hidden}
+.row .fill{height:100%;border-radius:3px;transition:width .5s ease}
+.row.pub .fill{background:var(--pub)} .row.priv .fill{background:var(--priv)}
+.row.adj .fill{background:repeating-linear-gradient(45deg,var(--warn) 0 4px,transparent 4px 8px)}
+.axis{display:flex;justify-content:space-between;font-family:var(--f-data);font-size:.7rem;color:var(--muted)}
+
+/* cálculo */
+.calc{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;min-width:520px;font-size:.92rem}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--f-data);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500}
+td.n{text-align:right;font-family:var(--f-data);font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.tot td{font-weight:600;border-bottom:2px solid var(--fg)}
+tr.excl td{color:var(--muted);text-decoration:line-through}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px}
+.formula{font-family:var(--f-data);font-size:.9rem;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px;overflow-x:auto;white-space:nowrap}
+
+/* advertencias */
+.caveats{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.cav{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:6px;padding:14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.cav .dir{font-family:var(--f-data);font-size:.72rem;color:var(--warn);letter-spacing:.04em;text-transform:uppercase}
+.cav p{font-size:.92rem;color:var(--muted)}
+
+.sources{display:flex;flex-direction:column;gap:6px;font-size:.92rem;padding-left:18px;margin:0}
+.sources a{color:var(--pub)}
+footer{color:var(--muted);font-size:.85rem;border-top:1px solid var(--line);padding-top:16px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">España · datos 2026 · estimación propia</span>
+    <h1>¿Cuánta gente vive de un ingreso público y cuánta de uno privado?</h1>
+    <p class="lede">Un cálculo aproximado con los últimos datos oficiales de empleo, pensiones, paro e Ingreso Mínimo Vital. Cambia los supuestos y mira cómo se mueve el reparto.</p>
+    <span class="badge">⚠ Es una estimación, no una estadística oficial</span>
+  </header>
+
+  <section aria-labelledby="h-res">
+    <h2 id="h-res" class="eyebrow" style="font-family:var(--f-data);font-size:.75rem;font-weight:500">Resultado con los supuestos actuales</h2>
+    <div class="result">
+      <div class="split">
+        <div class="side pub"><span class="pct num" id="pctPub">47%</span><span class="lbl">Ingreso público</span><span class="abs num" id="absPub">17,0 M personas</span></div>
+        <div class="side priv"><span class="pct num" id="pctPriv">53%</span><span class="lbl">Ingreso privado</span><span class="abs num" id="absPriv">19,1 M personas</span></div>
+      </div>
+      <div>
+        <div class="bar100" role="img" id="bar100" aria-label="Reparto público frente a privado">
+          <div class="b-pub" id="bPub" style="flex-basis:47%"></div>
+          <div class="b-priv" id="bPriv" style="flex-basis:53%"></div>
+        </div>
+        <div class="midline"><span>50%</span></div>
+      </div>
+      <p class="ratio" id="ratio">Por cada persona con ingreso público hay <strong>1,1</strong> con ingreso privado.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-sup">
+    <h2 id="h-sup">Juega con los supuestos</h2>
+    <p>Cada interruptor añade o quita un grupo del cálculo. Así ves cuánto pesa cada decisión.</p>
+    <div class="presets" role="group" aria-label="Escenarios rápidos">
+      <button type="button" data-preset="empleo">Solo empleo</button>
+      <button type="button" data-preset="pens">Empleo + pensiones</button>
+      <button type="button" data-preset="base">Todo (base)</button>
+      <button type="button" data-preset="ajust">Todo, ajustado</button>
+    </div>
+    <div class="panel">
+      <label class="toggle privtg"><input type="checkbox" id="tAut" checked><span class="t"><b>Contar autónomos y empresarios</b><small>3,19 M. Son ingreso privado, aunque no sean asalariados.</small></span></label>
+      <label class="toggle"><input type="checkbox" id="tPens" checked><span class="t"><b>Contar pensionistas de la Seguridad Social</b><small>~9,5 M de personas que cobran 10,5 M de pensiones.</small></span></label>
+      <label class="toggle"><input type="checkbox" id="tClas" checked><span class="t"><b>Contar clases pasivas</b><small>~0,74 M. Pensiones de funcionarios del régimen antiguo del Estado.</small></span></label>
+      <label class="toggle"><input type="checkbox" id="tNoc" checked><span class="t"><b>Contar pensiones no contributivas</b><small>~0,5 M. Para quien no cotizó lo suficiente.</small></span></label>
+      <label class="toggle"><input type="checkbox" id="tParo" checked><span class="t"><b>Contar prestaciones por desempleo</b><small>1,69 M beneficiarios de paro o subsidio.</small></span></label>
+      <div class="toggle" style="cursor:default">
+        <input type="checkbox" id="tImv" checked aria-label="Contar Ingreso Mínimo Vital">
+        <span class="t"><b>Contar Ingreso Mínimo Vital</b><small>¿Cuento un perceptor por hogar o a todas las personas del hogar?</small>
+          <span class="seg" role="group" aria-label="Forma de contar el IMV">
+            <button type="button" id="imvH" aria-pressed="true">Hogares · 0,86 M</button>
+            <button type="button" id="imvP" aria-pressed="false">Personas · 2,63 M</button>
+          </span>
+        </span>
+      </div>
+      <div class="slider">
+        <label for="sOver"><span>Descuento por doble conteo</span><span class="num" id="vOver">0,0 M</span></label>
+        <input type="range" id="sOver" min="0" max="1.5" step="0.1" value="0">
+        <small>Personas que aparecen en dos grupos (pensionista que trabaja, IMV con empleo, parado con trabajo parcial). No hay un dato oficial: es un supuesto. Se resta del lado público y del total.</small>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-des">
+    <h2 id="h-des">Desglose por grupo</h2>
+    <div class="legend"><span><i style="background:var(--pub)"></i>Público</span><span><i style="background:var(--priv)"></i>Privado</span><span><i style="background:repeating-linear-gradient(45deg,var(--warn) 0 3px,transparent 3px 6px)"></i>Descuento</span></div>
+    <div class="rows" id="rows"></div>
+    <div class="axis num"><span>0</span><span>4 M</span><span>8 M</span><span>12 M</span><span>16 M</span></div>
+  </section>
+
+  <section aria-labelledby="h-calc">
+    <h2 id="h-calc">Cómo se ha calculado</h2>
+    <p>Se suman las personas cuyo ingreso principal sale de las arcas públicas y se comparan con las que lo obtienen de una empresa o de su propio negocio. Los asalariados privados no se publican directamente: salen de restar los públicos al total de asalariados de la EPA.</p>
+    <div class="calc">
+      <table>
+        <thead><tr><th>Grupo</th><th>Fuente y fecha</th><th style="text-align:right">Personas</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="formula" id="formula"></div>
+  </section>
+
+  <section aria-labelledby="h-cav">
+    <h2 id="h-cav">Por qué es solo una estimación</h2>
+    <div class="caveats">
+      <div class="cav"><span class="dir">Infla lo público</span><h3>Doble conteo</h3><p>Un pensionista que sigue trabajando, o un hogar con IMV donde alguien tiene empleo, cuenta en los dos lados. El ajuste del deslizador es un supuesto, no un dato.</p></div>
+      <div class="cav"><span class="dir">Infla lo público</span><h3>Pensiones frente a personas</h3><p>La cifra de clases pasivas es de pensiones, no de personas, y alguien puede cobrar de clases pasivas y de la Seguridad Social a la vez.</p></div>
+      <div class="cav"><span class="dir">Mezcla fechas</span><h3>Datos de meses distintos</h3><p>EPA del 2.º trimestre, pensiones de junio, paro de mayo e IMV de junio. Son fotos cercanas, pero no simultáneas, y vienen de encuestas y registros diferentes.</p></div>
+      <div class="cav"><span class="dir">Infravalora lo público</span><h3>Empleo privado pagado con dinero público</h3><p>Sanidad y educación concertadas, obra pública o consultoría para la Administración son empleo privado que depende de contratos públicos.</p></div>
+      <div class="cav"><span class="dir">Infravalora lo privado</span><h3>Quién financia las pensiones</h3><p>Las pensiones se pagan sobre todo con cotizaciones del empleo privado, así que "público" aquí indica quién paga el ingreso, no de dónde sale el dinero.</p></div>
+      <div class="cav"><span class="dir">Fuera del cálculo</span><h3>Familiares y otras ayudas</h3><p>No se cuentan los dependientes sin ingresos de ningún grupo, ni rentas mínimas autonómicas, becas o ayudas a la dependencia.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-src">
+    <h2 id="h-src">Fuentes</h2>
+    <ul class="sources">
+      <li><a href="https://www.ine.es/dyngs/Prensa/EPA2T26.pdf" target="_blank" rel="noopener">INE · Encuesta de Población Activa, 2.º trimestre 2026</a></li>
+      <li><a href="https://www.esdiario.com/economia/260728/194255/mercado-laboral-bate-record-ocupacion-subempleo-sigue-alza-indefinidos.html" target="_blank" rel="noopener">esdiario · Asalariados y no asalariados, EPA 2T 2026</a></li>
+      <li><a href="https://www.bolsamania.com/noticias_print/economia/economia--amp-la-seguridad-social-destina-en-junio-28432-millones-a-la-paga-ordinaria-y-la-extra-de-las-pensiones--22844972.html" target="_blank" rel="noopener">Europa Press · Nómina de pensiones de junio 2026</a></li>
+      <li><a href="https://www.vozpopuli.com/economia/macroeconomia/la-factura-de-las-pensiones-supera-la-barrera-de-los-16000-millones-al-mes-con-la-ultima-subida.html" target="_blank" rel="noopener">Vozpópuli · Clases pasivas y no contributivas</a></li>
+      <li><a href="https://roams.es/actualidad/finanzas/cuando-se-cobra-paro-agosto-2026-caixabank-santander-bbva-bancos/" target="_blank" rel="noopener">Roams · Beneficiarios de prestación por desempleo (SEPE, mayo 2026)</a></li>
+      <li><a href="https://www.lamoncloa.gob.es/serviciosdeprensa/notasprensa/inclusion/Paginas/2026/070726-ingreso-minimo-vital-junio.aspx" target="_blank" rel="noopener">La Moncloa · Ingreso Mínimo Vital, junio 2026</a></li>
+    </ul>
+  </section>
+
+  <footer>Elaborado el 10 de octubre de 2026 con los últimos datos publicados. Cifras redondeadas; las sumas pueden no cuadrar exactamente.</footer>
+</div>
+
+<script>
+(function(){
+  const G = [
+    {id:'apub', side:'pub', name:'Asalariados del sector público', src:'EPA 2T 2026 (INE)', v:3.6469, key:null},
+    {id:'pens', side:'pub', name:'Pensionistas de la Seguridad Social', src:'Seguridad Social, junio 2026', v:9.5, key:'tPens'},
+    {id:'clas', side:'pub', name:'Clases pasivas', src:'Prensa, 2026 (dato de pensiones)', v:0.737, key:'tClas'},
+    {id:'noc',  side:'pub', name:'Pensiones no contributivas', src:'Prensa, 2026 (aprox.)', v:0.5, key:'tNoc'},
+    {id:'paro', side:'pub', name:'Prestación o subsidio por desempleo', src:'SEPE, mayo 2026', v:1.686936, key:'tParo'},
+    {id:'imv',  side:'pub', name:'Ingreso Mínimo Vital', src:'INSS, junio 2026', v:0.860458, vP:2.627344, key:'tImv'},
+    {id:'apriv',side:'priv',name:'Asalariados del sector privado', src:'EPA 2T 2026: 19,59 M − 3,65 M', v:15.9385, key:null},
+    {id:'aut',  side:'priv',name:'Autónomos y empresarios', src:'EPA 2T 2026 (no asalariados)', v:3.1936, key:'tAut'}
+  ];
+  const $ = id => document.getElementById(id);
+  const state = {tAut:true,tPens:true,tClas:true,tNoc:true,tParo:true,tImv:true,imvMode:'h',over:0};
+  try{ const s = JSON.parse(localStorage.getItem('ipp-state')||'null'); if(s) Object.assign(state,s); }catch(e){}
+
+  const fmt = (x,d=1) => x.toLocaleString('es-ES',{minimumFractionDigits:d,maximumFractionDigits:d});
+  const val = g => g.id==='imv' && state.imvMode==='p' ? g.vP : g.v;
+  const on  = g => !g.key || state[g.key];
+  const MAX = 16;
+
+  function render(){
+    ['tAut','tPens','tClas','tNoc','tParo','tImv'].forEach(k => $(k).checked = state[k]);
+    $('imvH').setAttribute('aria-pressed', state.imvMode==='h');
+    $('imvP').setAttribute('aria-pressed', state.imvMode==='p');
+    $('sOver').value = state.over; $('vOver').textContent = fmt(+state.over)+' M';
+
+    let pub=0, priv=0;
+    G.forEach(g => { if(on(g)){ g.side==='pub' ? pub+=val(g) : priv+=val(g); }});
+    const over = Math.min(+state.over, pub);
+    pub -= over;
+    const tot = pub+priv, pp = pub/tot*100, pv = 100-pp;
+    $('pctPub').textContent = fmt(pp,0)+'%';
+    $('pctPriv').textContent = fmt(pv,0)+'%';
+    $('absPub').textContent = fmt(pub)+' M personas';
+    $('absPriv').textContent = fmt(priv)+' M personas';
+    $('bPub').style.flexBasis = pp+'%'; $('bPriv').style.flexBasis = pv+'%';
+    $('bar100').setAttribute('aria-label', `Público ${fmt(pp,0)}%, privado ${fmt(pv,0)}%`);
+    const r = priv/pub;
+    $('ratio').innerHTML = r>=1
+      ? `Por cada persona con ingreso público hay <strong>${fmt(r,2)}</strong> con ingreso privado.`
+      : `Hay más personas con ingreso público: <strong>${fmt(1/r,2)}</strong> por cada una con ingreso privado.`;
+
+    // filas
+    const rows = $('rows'); rows.innerHTML='';
+    const list = [...G.filter(g=>g.side==='pub'), ...(over>0?[{adj:true}]:[]), ...G.filter(g=>g.side==='priv')];
+    list.forEach(g=>{
+      const d = document.createElement('div');
+      if(g.adj){
+        d.className='row adj';
+        d.innerHTML = `<div class="top"><span>Descuento por doble conteo (supuesto)</span><span class="num">−${fmt(over,2)} M</span></div><div class="track"><div class="fill" style="width:${over/MAX*100}%"></div></div>`;
+      } else {
+        const v = val(g);
+        d.className = 'row '+g.side+(on(g)?'':' off');
+        const label = g.id==='imv' ? g.name+(state.imvMode==='p'?' (personas)':' (hogares)') : g.name;
+        d.innerHTML = `<div class="top"><span>${label}</span><span class="num">${fmt(v,2)} M</span></div><div class="track"><div class="fill" style="width:${Math.min(v/MAX,1)*100}%"></div></div>`;
+      }
+      rows.appendChild(d);
+    });
+
+    // tabla
+    const tb = $('tbody'); tb.innerHTML='';
+    const addRow = (cls,a,b,c) => { const tr=document.createElement('tr'); if(cls) tr.className=cls; tr.innerHTML=`<td>${a}</td><td>${b}</td><td class="n">${c}</td>`; tb.appendChild(tr); };
+    const dot = s => `<span class="dot" style="background:var(--${s})"></span>`;
+    G.filter(g=>g.side==='pub').forEach(g=>addRow(on(g)?'':'excl', dot('pub')+(g.id==='imv'?g.name+(state.imvMode==='p'?' (personas)':' (hogares)'):g.name), g.src, fmt(val(g),2)+' M'));
+    if(over>0) addRow('', dot('warn')+'Descuento por doble conteo', 'Supuesto del usuario', '−'+fmt(over,2)+' M');
+    addRow('tot','Total público','', fmt(pub,2)+' M');
+    G.filter(g=>g.side==='priv').forEach(g=>addRow(on(g)?'':'excl', dot('priv')+g.name, g.src, fmt(val(g),2)+' M'));
+    addRow('tot','Total privado','', fmt(priv,2)+' M');
+
+    $('formula').innerHTML = `% público = ${fmt(pub,2)} ÷ (${fmt(pub,2)} + ${fmt(priv,2)}) = <strong>${fmt(pp,1)}%</strong>`;
+    try{ localStorage.setItem('ipp-state', JSON.stringify(state)); }catch(e){}
+  }
+
+  ['tAut','tPens','tClas','tNoc','tParo','tImv'].forEach(k => $(k).addEventListener('change', e => { state[k]=e.target.checked; render(); }));
+  $('imvH').addEventListener('click', ()=>{ state.imvMode='h'; render(); });
+  $('imvP').addEventListener('click', ()=>{ state.imvMode='p'; render(); });
+  $('sOver').addEventListener('input', e => { state.over = +e.target.value; render(); });
+  const presets = {
+    empleo:{tAut:false,tPens:false,tClas:false,tNoc:false,tParo:false,tImv:false,imvMode:'h',over:0},
+    pens:{tAut:true,tPens:true,tClas:true,tNoc:true,tParo:false,tImv:false,imvMode:'h',over:0},
+    base:{tAut:true,tPens:true,tClas:true,tNoc:true,tParo:true,tImv:true,imvMode:'h',over:0},
+    ajust:{tAut:true,tPens:true,tClas:true,tNoc:true,tParo:true,tImv:true,imvMode:'h',over:0.9}
+  };
+  document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', ()=>{ Object.assign(state, presets[b.dataset.preset]); render(); }));
+  render();
+})();
+</script>
+
+</body></html>
