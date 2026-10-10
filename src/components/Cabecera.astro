@@ -1,6 +1,20 @@
+---
+import type { Locale } from '../i18n/ui';
+import { t } from '../i18n/utils';
+
+interface Props {
+  lang: Locale;
+  eyebrow: string;
+  titulo: string;
+  lede: string;
+}
+
+const { lang, eyebrow, titulo, lede } = Astro.props;
+---
+
 <header>
-  <span class="eyebrow">España · datos 2026 · estimación propia</span>
-  <h1>¿Cuánta gente vive de un ingreso público y cuánta de uno privado?</h1>
-  <p class="lede">Un cálculo aproximado con los últimos datos oficiales de empleo, pensiones, paro e Ingreso Mínimo Vital. Cambia los supuestos y mira cómo se mueve el reparto.</p>
-  <span class="badge">⚠ Es una estimación, no una estadística oficial</span>
+  <span class="eyebrow">{eyebrow}</span>
+  <h1>{titulo}</h1>
+  <p class="lede">{lede}</p>
+  <span class="badge">{t(lang).badge}</span>
 </header>

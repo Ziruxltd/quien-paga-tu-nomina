@@ -1,60 +1,68 @@
-import { ESTADO_INICIAL, GRUPOS, PRESETS, type ClaveToggle, type Estado, type Grupo } from '../data/grupos';
+import { activo, calcular, ESTADO_INICIAL, valor } from '../data/calculo';
+import type { Estado, Grupo, Pais, PresetId } from '../data/paises/types';
+import type { Locale } from '../i18n/ui';
+import { fmt as fmtL, plantilla, t } from '../i18n/utils';
 
-const CLAVES: ClaveToggle[] = ['tAut', 'tPens', 'tClas', 'tNoc', 'tParo', 'tImv'];
-const MAX = 16;
+/** Datos que la página del país deja en <script type="application/json" id="cfg"> */
+export interface Config {
+  lang: Locale;
+  slug: string;
+  escalaMax: number;
+  grupos: Grupo[];
+  presets: Pais['presets'];
+}
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
-const state: Estado = { ...ESTADO_INICIAL };
+const cfg: Config = JSON.parse($('cfg').textContent!);
+const { lang, grupos, escalaMax: MAX } = cfg;
+const tx = t(lang);
+const fmt = (x: number, d = 1) => fmtL(lang, x, d);
+const CLAVE = 'ipp-state-' + cfg.slug;
+
+const state: Estado = { ...ESTADO_INICIAL, off: [], alt: [] };
 try {
-  const s = JSON.parse(localStorage.getItem('ipp-state') || 'null');
-  if (s) Object.assign(state, s);
+  const s = JSON.parse(localStorage.getItem(CLAVE) || 'null');
+  if (s && Array.isArray(s.off) && Array.isArray(s.alt)) Object.assign(state, s);
 } catch (e) {}
 
-const fmt = (x: number, d = 1) => x.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d });
-const val = (g: Grupo) => (g.id === 'imv' && state.imvMode === 'p' ? g.vP! : g.v);
-const on = (g: Grupo) => !g.key || state[g.key];
-const nombre = (g: Grupo) => (g.id === 'imv' ? g.name + (state.imvMode === 'p' ? ' (personas)' : ' (hogares)') : g.name);
+const val = (g: Grupo) => valor(g, state);
+const on = (g: Grupo) => activo(g, state);
+const nombre = (g: Grupo) =>
+  g.alt ? `${g.name[lang]} (${(state.alt.includes(g.id) ? g.alt.label : g.alt.baseLabel)[lang].toLowerCase()})` : g.name[lang];
+
+const checks = document.querySelectorAll<HTMLInputElement>('input[data-grupo]');
+const altBtns = document.querySelectorAll<HTMLButtonElement>('button[data-alt]');
 
 function render() {
-  CLAVES.forEach((k) => ($<HTMLInputElement>(k).checked = state[k]));
-  $('imvH').setAttribute('aria-pressed', String(state.imvMode === 'h'));
-  $('imvP').setAttribute('aria-pressed', String(state.imvMode === 'p'));
+  checks.forEach((c) => (c.checked = !state.off.includes(c.dataset.grupo!)));
+  altBtns.forEach((b) => b.setAttribute('aria-pressed', String(state.alt.includes(b.dataset.alt!) === (b.dataset.valor === '1'))));
   $<HTMLInputElement>('sOver').value = String(state.over);
   $('vOver').textContent = fmt(+state.over) + ' M';
 
-  let pub = 0, priv = 0;
-  GRUPOS.forEach((g) => {
-    if (on(g)) g.side === 'pub' ? (pub += val(g)) : (priv += val(g));
-  });
-  const over = Math.min(+state.over, pub);
-  pub -= over;
-  const tot = pub + priv, pp = (pub / tot) * 100, pv = 100 - pp;
+  const { pub, priv, over, pp, pv, ratio: r } = calcular(grupos, state);
   $('pctPub').textContent = fmt(pp, 0) + '%';
   $('pctPriv').textContent = fmt(pv, 0) + '%';
-  $('absPub').textContent = fmt(pub) + ' M personas';
-  $('absPriv').textContent = fmt(priv) + ' M personas';
+  $('absPub').textContent = plantilla(tx.mPersonas, { x: fmt(pub) });
+  $('absPriv').textContent = plantilla(tx.mPersonas, { x: fmt(priv) });
   $('bPub').style.flexBasis = pp + '%';
   $('bPriv').style.flexBasis = pv + '%';
-  $('bar100').setAttribute('aria-label', `Público ${fmt(pp, 0)}%, privado ${fmt(pv, 0)}%`);
-  const r = priv / pub;
-  $('ratio').innerHTML = r >= 1
-    ? `Por cada persona con ingreso público hay <strong>${fmt(r, 2)}</strong> con ingreso privado.`
-    : `Hay más personas con ingreso público: <strong>${fmt(1 / r, 2)}</strong> por cada una con ingreso privado.`;
+  $('bar100').setAttribute('aria-label', plantilla(tx.barAria, { pub: fmt(pp, 0), priv: fmt(pv, 0) }));
+  $('ratio').innerHTML = r >= 1 ? plantilla(tx.ratioPriv, { x: fmt(r, 2) }) : plantilla(tx.ratioPub, { x: fmt(1 / r, 2) });
 
   // filas
   const rows = $('rows');
   rows.innerHTML = '';
   const list: (Grupo | { adj: true })[] = [
-    ...GRUPOS.filter((g) => g.side === 'pub'),
+    ...grupos.filter((g) => g.side === 'pub'),
     ...(over > 0 ? [{ adj: true as const }] : []),
-    ...GRUPOS.filter((g) => g.side === 'priv'),
+    ...grupos.filter((g) => g.side === 'priv'),
   ];
   list.forEach((g) => {
     const d = document.createElement('div');
     if ('adj' in g) {
       d.className = 'row adj';
-      d.innerHTML = `<div class="top"><span>Descuento por doble conteo (supuesto)</span><span class="num">−${fmt(over, 2)} M</span></div><div class="track"><div class="fill" style="width:${(over / MAX) * 100}%"></div></div>`;
+      d.innerHTML = `<div class="top"><span>${tx.overFila}</span><span class="num">−${fmt(over, 2)} M</span></div><div class="track"><div class="fill" style="width:${Math.min(over / MAX, 1) * 100}%"></div></div>`;
     } else {
       const v = val(g);
       d.className = 'row ' + g.side + (on(g) ? '' : ' off');
@@ -73,33 +81,40 @@ function render() {
     tb.appendChild(tr);
   };
   const dot = (s: string) => `<span class="dot" style="background:var(--${s})"></span>`;
-  GRUPOS.filter((g) => g.side === 'pub').forEach((g) => addRow(on(g) ? '' : 'excl', dot('pub') + nombre(g), g.src, fmt(val(g), 2) + ' M'));
-  if (over > 0) addRow('', dot('warn') + 'Descuento por doble conteo', 'Supuesto del usuario', '−' + fmt(over, 2) + ' M');
-  addRow('tot', 'Total público', '', fmt(pub, 2) + ' M');
-  GRUPOS.filter((g) => g.side === 'priv').forEach((g) => addRow(on(g) ? '' : 'excl', dot('priv') + g.name, g.src, fmt(val(g), 2) + ' M'));
-  addRow('tot', 'Total privado', '', fmt(priv, 2) + ' M');
+  grupos.filter((g) => g.side === 'pub').forEach((g) => addRow(on(g) ? '' : 'excl', dot('pub') + nombre(g), g.src[lang], fmt(val(g), 2) + ' M'));
+  if (over > 0) addRow('', dot('warn') + tx.overTitulo, tx.overFuente, '−' + fmt(over, 2) + ' M');
+  addRow('tot', tx.totPub, '', fmt(pub, 2) + ' M');
+  grupos.filter((g) => g.side === 'priv').forEach((g) => addRow(on(g) ? '' : 'excl', dot('priv') + nombre(g), g.src[lang], fmt(val(g), 2) + ' M'));
+  addRow('tot', tx.totPriv, '', fmt(priv, 2) + ' M');
 
-  $('formula').innerHTML = `% público = ${fmt(pub, 2)} ÷ (${fmt(pub, 2)} + ${fmt(priv, 2)}) = <strong>${fmt(pp, 1)}%</strong>`;
+  $('formula').innerHTML = `${tx.formulaPub} = ${fmt(pub, 2)} ÷ (${fmt(pub, 2)} + ${fmt(priv, 2)}) = <strong>${fmt(pp, 1)}%</strong>`;
   try {
-    localStorage.setItem('ipp-state', JSON.stringify(state));
+    localStorage.setItem(CLAVE, JSON.stringify(state));
   } catch (e) {}
 }
 
-CLAVES.forEach((k) =>
-  $<HTMLInputElement>(k).addEventListener('change', (e) => {
-    state[k] = (e.target as HTMLInputElement).checked;
+const alterna = (lista: string[], id: string, incluir: boolean) => (incluir ? [...new Set([...lista, id])] : lista.filter((x) => x !== id));
+
+checks.forEach((c) =>
+  c.addEventListener('change', () => {
+    state.off = alterna(state.off, c.dataset.grupo!, !c.checked);
     render();
   }),
 );
-$('imvH').addEventListener('click', () => { state.imvMode = 'h'; render(); });
-$('imvP').addEventListener('click', () => { state.imvMode = 'p'; render(); });
+altBtns.forEach((b) =>
+  b.addEventListener('click', () => {
+    state.alt = alterna(state.alt, b.dataset.alt!, b.dataset.valor === '1');
+    render();
+  }),
+);
 $<HTMLInputElement>('sOver').addEventListener('input', (e) => {
   state.over = +(e.target as HTMLInputElement).value;
   render();
 });
 document.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((b) =>
   b.addEventListener('click', () => {
-    Object.assign(state, PRESETS[b.dataset.preset!].estado);
+    const p = cfg.presets[b.dataset.preset as PresetId];
+    Object.assign(state, { off: [...p.apagados], alt: [], over: p.over });
     render();
   }),
 );

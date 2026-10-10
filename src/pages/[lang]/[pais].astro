@@ -1,0 +1,48 @@
+---
+import type { GetStaticPaths } from 'astro';
+import Base from '../../layouts/Base.astro';
+import Cabecera from '../../components/Cabecera.astro';
+import Resultado from '../../components/Resultado.astro';
+import Supuestos from '../../components/Supuestos.astro';
+import Desglose from '../../components/Desglose.astro';
+import Calculo from '../../components/Calculo.astro';
+import Advertencias from '../../components/Advertencias.astro';
+import Fuentes from '../../components/Fuentes.astro';
+import { PAISES } from '../../data/paises';
+import type { Pais } from '../../data/paises/types';
+import { LOCALES, type Locale } from '../../i18n/ui';
+import { t } from '../../i18n/utils';
+import type { Config } from '../../scripts/estimador';
+
+export const getStaticPaths = (() =>
+  LOCALES.flatMap((lang) => PAISES.map((pais) => ({ params: { lang, pais: pais.slug }, props: { lang, pais } })))) satisfies GetStaticPaths;
+
+interface Props {
+  lang: Locale;
+  pais: Pais;
+}
+
+const { lang, pais } = Astro.props;
+const tx = t(lang);
+const cfg: Config = { lang, slug: pais.slug, escalaMax: pais.escalaMax, grupos: pais.grupos, presets: pais.presets };
+// Escapar "<" evita que el JSON cierre la etiqueta <script>.
+const cfgJson = JSON.stringify(cfg).replace(/</g, '\\u003c');
+---
+
+<Base lang={lang} ruta={pais.slug} title={`${tx.titulo} · ${pais.nombre[lang]}`} description={pais.cabecera.lede[lang]}>
+  <main id="main" class="wrap">
+    <Cabecera lang={lang} eyebrow={pais.cabecera.eyebrow[lang]} titulo={pais.cabecera.titulo[lang]} lede={pais.cabecera.lede[lang]} />
+    <Resultado lang={lang} />
+    <Supuestos lang={lang} pais={pais} />
+    <Desglose lang={lang} escalaMax={pais.escalaMax} />
+    <Calculo lang={lang} metodo={pais.metodo[lang]} />
+    <Advertencias lang={lang} advertencias={pais.advertencias} />
+    <Fuentes lang={lang} fuentes={pais.fuentes} />
+    <footer>{pais.pie[lang]}</footer>
+  </main>
+  <script type="application/json" id="cfg" set:html={cfgJson} />
+</Base>
+
+<script>
+  import '../../scripts/estimador';
+</script>

@@ -1,19 +1,21 @@
 ---
-const advertencias = [
-  { dir: 'Infla lo público', titulo: 'Doble conteo', texto: 'Un pensionista que sigue trabajando, o un hogar con IMV donde alguien tiene empleo, cuenta en los dos lados. El ajuste del deslizador es un supuesto, no un dato.' },
-  { dir: 'Infla lo público', titulo: 'Pensiones frente a personas', texto: 'La cifra de clases pasivas es de pensiones, no de personas, y alguien puede cobrar de clases pasivas y de la Seguridad Social a la vez.' },
-  { dir: 'Mezcla fechas', titulo: 'Datos de meses distintos', texto: 'EPA del 2.º trimestre, pensiones de junio, paro de mayo e IMV de junio. Son fotos cercanas, pero no simultáneas, y vienen de encuestas y registros diferentes.' },
-  { dir: 'Infravalora lo público', titulo: 'Empleo privado pagado con dinero público', texto: 'Sanidad y educación concertadas, obra pública o consultoría para la Administración son empleo privado que depende de contratos públicos.' },
-  { dir: 'Infravalora lo privado', titulo: 'Quién financia las pensiones', texto: 'Las pensiones se pagan sobre todo con cotizaciones del empleo privado, así que "público" aquí indica quién paga el ingreso, no de dónde sale el dinero.' },
-  { dir: 'Fuera del cálculo', titulo: 'Familiares y otras ayudas', texto: 'No se cuentan los dependientes sin ingresos de ningún grupo, ni rentas mínimas autonómicas, becas o ayudas a la dependencia.' },
-];
+import type { Pais } from '../data/paises/types';
+import type { Locale } from '../i18n/ui';
+import { t } from '../i18n/utils';
+
+interface Props {
+  lang: Locale;
+  advertencias: Pais['advertencias'];
+}
+
+const { lang, advertencias } = Astro.props;
 ---
 
 <section aria-labelledby="h-cav">
-  <h2 id="h-cav">Por qué es solo una estimación</h2>
+  <h2 id="h-cav">{t(lang).cavTitulo}</h2>
   <div class="caveats">
     {advertencias.map((a) => (
-      <div class="cav"><span class="dir">{a.dir}</span><h3>{a.titulo}</h3><p>{a.texto}</p></div>
+      <div class="cav"><span class="dir">{a.dir[lang]}</span><h3>{a.titulo[lang]}</h3><p>{a.texto[lang]}</p></div>
     ))}
   </div>
 </section>

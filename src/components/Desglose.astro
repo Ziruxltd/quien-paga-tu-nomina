@@ -1,6 +1,20 @@
+---
+import type { Locale } from '../i18n/ui';
+import { fmt, t } from '../i18n/utils';
+
+interface Props {
+  lang: Locale;
+  escalaMax: number;
+}
+
+const { lang, escalaMax } = Astro.props;
+const tx = t(lang);
+const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => f * escalaMax);
+---
+
 <section aria-labelledby="h-des">
-  <h2 id="h-des">Desglose por grupo</h2>
-  <div class="legend"><span><i style="background:var(--pub)"></i>Público</span><span><i style="background:var(--priv)"></i>Privado</span><span><i style="background:repeating-linear-gradient(45deg,var(--warn) 0 3px,transparent 3px 6px)"></i>Descuento</span></div>
+  <h2 id="h-des">{tx.desTitulo}</h2>
+  <div class="legend"><span><i style="background:var(--pub)"></i>{tx.publico}</span><span><i style="background:var(--priv)"></i>{tx.privado}</span><span><i style="background:repeating-linear-gradient(45deg,var(--warn) 0 3px,transparent 3px 6px)"></i>{tx.descuento}</span></div>
   <div class="rows" id="rows"></div>
-  <div class="axis num"><span>0</span><span>4 M</span><span>8 M</span><span>12 M</span><span>16 M</span></div>
+  <div class="axis num">{ticks.map((x) => <span>{x === 0 ? '0' : fmt(lang, x, Number.isInteger(x) ? 0 : 1) + ' M'}</span>)}</div>
 </section>

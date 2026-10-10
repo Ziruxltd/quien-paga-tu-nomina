@@ -1,0 +1,116 @@
+---
+// Comparativa entre países. Se calcula en el build con la misma función que la página de cada país.
+import { activo, calcular, estadoPreset, valor } from '../data/calculo';
+import { PAISES } from '../data/paises';
+import { CATEGORIAS, PRESET_IDS, type Categoria } from '../data/paises/types';
+import type { Locale } from '../i18n/ui';
+import { fmt, pathFor, t } from '../i18n/utils';
+
+interface Props {
+  lang: Locale;
+}
+
+const { lang } = Astro.props;
+const tx = t(lang);
+const f = (x: number, d = 1) => fmt(lang, x, d);
+
+const escenarios = PRESET_IDS.map((id) => ({
+  id,
+  filas: PAISES.map((p) => ({ pais: p, r: calcular(p.grupos, estadoPreset(p, id)) })),
+}));
+
+// Por categoría, escenario base
+const base = PAISES.map((p) => {
+  const e = estadoPreset(p, 'base');
+  const r = calcular(p.grupos, e);
+  const suma = (c: Categoria) => {
+    const gs = p.grupos.filter((g) => g.categoria === c && activo(g, e));
+    return gs.length ? gs.reduce((s, g) => s + valor(g, e), 0) : null;
+  };
+  return { pais: p, r, cat: Object.fromEntries(CATEGORIAS.map((c) => [c, suma(c)])) as Record<Categoria, number | null> };
+});
+const ladoDe = (c: Categoria) => PAISES.flatMap((p) => p.grupos).find((g) => g.categoria === c)?.side ?? 'pub';
+const catPub = CATEGORIAS.filter((c) => ladoDe(c) === 'pub');
+const catPriv = CATEGORIAS.filter((c) => ladoDe(c) === 'priv');
+---
+
+<section class="cmp-wrap" aria-labelledby="h-cmp">
+  <h2 id="h-cmp">{tx.cmpRepartoTitulo}</h2>
+  <div class="cmp-sc" role="radiogroup" aria-label={tx.cmpEscenario}>
+    {PRESET_IDS.map((id) => (
+      <label>
+        <input type="radio" name="sc" id={'sc-' + id} value={id} checked={id === 'base'} />
+        <span>{tx.presets[id]}</span>
+      </label>
+    ))}
+  </div>
+  <div class="calc">
+    <table class="cmp cmp-rep">
+      <thead>
+        <tr>
+          <th>{tx.thPais}</th>
+          <th style="text-align:right">{tx.publico}</th>
+          <th style="text-align:right">{tx.privado}</th>
+          <th style="text-align:right">{tx.thRatio}</th>
+          <th>{tx.thDatos}</th>
+        </tr>
+      </thead>
+      {escenarios.map((sc) => (
+        <tbody data-sc={sc.id}>
+          {sc.filas.map(({ pais, r }) => (
+            <tr>
+              <td class="pais">
+                <a href={pathFor(lang, pais.slug)}>{pais.nombre[lang]}</a>
+                <div class="minibar" role="img" aria-label={`${tx.publico} ${f(r.pp, 0)}%, ${tx.privado.toLowerCase()} ${f(r.pv, 0)}%`}>
+                  <span class="b-pub" style={`flex-basis:${r.pp}%`}></span><span class="b-priv" style={`flex-basis:${r.pv}%`}></span>
+                </div>
+              </td>
+              <td class="n" data-label={tx.publico}><b class="c-pub">{f(r.pp, 0)}%</b><small>{f(r.pub, 2)} M</small></td>
+              <td class="n" data-label={tx.privado}><b class="c-priv">{f(r.pv, 0)}%</b><small>{f(r.priv, 2)} M</small></td>
+              <td class="n" data-label={tx.thRatio}>{f(r.ratio, 2)}</td>
+              <td class="muted" data-label={tx.thDatos}>{pais.fechaDatos[lang]}</td>
+            </tr>
+          ))}
+        </tbody>
+      ))}
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="h-cat">
+  <h2 id="h-cat">{tx.cmpCatTitulo}</h2>
+  <p>{tx.cmpCatTexto}</p>
+  <div class="calc">
+    <table class="cmp cmp-cat">
+      <thead>
+        <tr>
+          <th>{tx.thCategoria}</th>
+          {base.map((b) => <th style="text-align:right">{b.pais.nombre[lang]}</th>)}
+        </tr>
+      </thead>
+      <tbody>
+        {[
+          { cats: catPub, lado: 'pub', tot: tx.totPub, totV: (b: (typeof base)[number]) => b.r.pub },
+          { cats: catPriv, lado: 'priv', tot: tx.totPriv, totV: (b: (typeof base)[number]) => b.r.priv },
+        ].map((bloque) => (
+          <>
+            {bloque.cats.map((c) => (
+              <tr>
+                <td class="cat"><span class="dot" style={`background:var(--${bloque.lado})`}></span>{tx.categorias[c]}</td>
+                {base.map((b) => {
+                  const v = b.cat[c];
+                  return v === null ? <td class="n muted" data-label={b.pais.nombre[lang]}>{tx.noAplica}</td> : <td class="n" data-label={b.pais.nombre[lang]}>{f(v, 2)} M<small>{f((v / b.r.tot) * 100, 1)}%</small></td>;
+                })}
+              </tr>
+            ))}
+            <tr class="tot">
+              <td class="cat">{bloque.tot}</td>
+              {base.map((b) => <td class="n" data-label={b.pais.nombre[lang]}>{f(bloque.totV(b), 2)} M<small>{f((bloque.totV(b) / b.r.tot) * 100, 1)}%</small></td>)}
+            </tr>
+          </>
+        ))}
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">{tx.cmpAviso}</p>
+</section>

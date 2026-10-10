@@ -1,36 +1,49 @@
 ---
-import { GRUPOS, PRESETS, TOGGLES } from '../data/grupos';
+import type { Pais } from '../data/paises/types';
+import { PRESET_IDS } from '../data/paises/types';
+import type { Locale } from '../i18n/ui';
+import { fmt, t } from '../i18n/utils';
 
-const imv = GRUPOS.find((g) => g.id === 'imv')!;
-const fmt = (x: number) => x.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+interface Props {
+  lang: Locale;
+  pais: Pais;
+}
+
+const { lang, pais } = Astro.props;
+const tx = t(lang);
+const grupo = (id: string) => pais.grupos.find((g) => g.id === id)!;
 ---
 
 <section aria-labelledby="h-sup">
-  <h2 id="h-sup">Juega con los supuestos</h2>
-  <p>Cada interruptor añade o quita un grupo del cálculo. Así ves cuánto pesa cada decisión.</p>
-  <div class="presets" role="group" aria-label="Escenarios rápidos">
-    {Object.entries(PRESETS).map(([id, p]) => <button type="button" data-preset={id}>{p.label}</button>)}
+  <h2 id="h-sup">{tx.supTitulo}</h2>
+  <p>{tx.supTexto}</p>
+  <div class="presets" role="group" aria-label={tx.escenarios}>
+    {PRESET_IDS.map((id) => <button type="button" data-preset={id}>{tx.presets[id]}</button>)}
   </div>
   <div class="panel">
-    {TOGGLES.map((t) => (
-      <label class:list={['toggle', { privtg: t.lado === 'priv' }]}>
-        <input type="checkbox" id={t.key} checked />
-        <span class="t"><b>{t.titulo}</b><small>{t.detalle}</small></span>
-      </label>
-    ))}
-    <div class="toggle" style="cursor:default">
-      <input type="checkbox" id="tImv" checked aria-label="Contar Ingreso Mínimo Vital" />
-      <span class="t"><b>Contar Ingreso Mínimo Vital</b><small>¿Cuento un perceptor por hogar o a todas las personas del hogar?</small>
-        <span class="seg" role="group" aria-label="Forma de contar el IMV">
-          <button type="button" id="imvH" aria-pressed="true">Hogares · {fmt(imv.v)} M</button>
-          <button type="button" id="imvP" aria-pressed="false">Personas · {fmt(imv.vP!)} M</button>
-        </span>
-      </span>
-    </div>
+    {pais.toggles.map((tg) => {
+      const g = grupo(tg.grupo);
+      return g.alt ? (
+        <div class="toggle" style="cursor:default">
+          <input type="checkbox" id={'t-' + g.id} data-grupo={g.id} checked aria-label={tg.titulo[lang]} />
+          <span class="t"><b>{tg.titulo[lang]}</b><small>{tg.detalle[lang]}</small>
+            <span class="seg" role="group" aria-label={tg.titulo[lang]}>
+              <button type="button" data-alt={g.id} data-valor="0" aria-pressed="true">{g.alt.baseLabel[lang]} · {fmt(lang, g.v, 2)} M</button>
+              <button type="button" data-alt={g.id} data-valor="1" aria-pressed="false">{g.alt.label[lang]} · {fmt(lang, g.alt.v, 2)} M</button>
+            </span>
+          </span>
+        </div>
+      ) : (
+        <label class:list={['toggle', { privtg: g.side === 'priv' }]}>
+          <input type="checkbox" id={'t-' + g.id} data-grupo={g.id} checked />
+          <span class="t"><b>{tg.titulo[lang]}</b><small>{tg.detalle[lang]}</small></span>
+        </label>
+      );
+    })}
     <div class="slider">
-      <label for="sOver"><span>Descuento por doble conteo</span><span class="num" id="vOver">0,0 M</span></label>
-      <input type="range" id="sOver" min="0" max="1.5" step="0.1" value="0" />
-      <small>Personas que aparecen en dos grupos (pensionista que trabaja, IMV con empleo, parado con trabajo parcial). No hay un dato oficial: es un supuesto. Se resta del lado público y del total.</small>
+      <label for="sOver"><span>{tx.overTitulo}</span><span class="num" id="vOver"></span></label>
+      <input type="range" id="sOver" min="0" max={pais.overMax} step="0.1" value="0" />
+      <small>{tx.overTexto}</small>
     </div>
   </div>
 </section>

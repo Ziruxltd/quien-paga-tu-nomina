@@ -1,12 +1,17 @@
 # ¿Quién paga tu nómina?
 
-Página interactiva que estima cuánta gente en España vive de un **ingreso público** (empleo público, pensiones, paro, Ingreso Mínimo Vital…) y cuánta de un **ingreso privado** (asalariados privados, autónomos y empresarios), con datos de 2026.
+Página interactiva que estima, país por país, cuánta gente vive de un **ingreso público** (empleo público, pensiones, paro, rentas mínimas…) y cuánta de un **ingreso privado** (asalariados privados, autónomos y empresarios), con datos de 2026.
 
-Con los supuestos por defecto el reparto sale en torno a **47 % público / 53 % privado**. La página deja activar o desactivar cada grupo, contar el IMV por hogares o por personas y aplicar un descuento por doble conteo para ver cómo cambia el resultado.
+- **Países:** España, Portugal, Suiza y Chile, más una página que los compara (`/{idioma}/compare/`).
+- **Idiomas:** español, inglés y portugués. Se cambian con las banderas de la cabecera. La raíz `/` redirige según el idioma del navegador.
 
-> ⚠ Es una estimación propia, no una estadística oficial. Mezcla datos de fuentes y meses distintos y puede contar a la misma persona en más de un grupo. La propia página explica estas limitaciones.
+Con los supuestos por defecto, España sale en torno a **47 % público / 53 % privado**, Portugal en torno a **50 % / 50 %** Suiza en torno a **43 % / 57 %** (solo residentes) y Chile en torno a **22 % / 78 %** (las pensiones de las AFP cuentan como ingreso privado). Cada página deja activar o desactivar grupos, cambiar la forma de contar la renta mínima (hogares o personas) y aplicar un descuento por doble conteo.
 
-Está hecha con [Astro](https://astro.build) y se genera como un sitio estático: no tiene servidor ni base de datos. El estado de los supuestos se guarda en el `localStorage` del navegador.
+> ⚠ Es una estimación propia, no una estadística oficial. Mezcla datos de fuentes y meses distintos y puede contar a la misma persona en más de un grupo. Cada página explica sus limitaciones.
+
+La página se adapta a móvil y escritorio: cabecera fija en una fila, controles táctiles de 44 px como mínimo y tablas que se apilan en tarjetas en pantallas estrechas.
+
+Está hecha con [Astro](https://astro.build) y se genera como un sitio estático: no tiene servidor ni base de datos. El estado de los supuestos se guarda en el `localStorage` del navegador, por separado para cada país.
 
 ## Requisitos
 
@@ -26,33 +31,56 @@ npm run preview    # sirve dist/ para revisarlo antes de publicar
 
 ```
 src/
-├── data/grupos.ts        # Cifras, fuentes, interruptores, escenarios y enlaces
-├── scripts/estimador.ts  # Lógica interactiva (cálculo, barras, tabla, persistencia)
-├── styles/global.css     # Estilos y paleta (modo claro y oscuro)
-├── layouts/Base.astro    # <html>, <head>, fuentes y CSS global
-├── components/           # Una sección de la página por componente
-│   ├── Cabecera.astro
-│   ├── Resultado.astro
-│   ├── Supuestos.astro
-│   ├── Desglose.astro
-│   ├── Calculo.astro
-│   ├── Advertencias.astro
-│   └── Fuentes.astro
-└── pages/index.astro     # Página principal que une todo
+├── data/
+│   ├── paises/
+│   │   ├── types.ts        # Tipos: Pais, Grupo, Toggle, Estado, categorías y escenarios
+│   │   ├── espana.ts       # Cifras, textos traducidos y fuentes de España
+│   │   ├── portugal.ts     # Ídem para Portugal
+│   │   ├── suiza.ts        # Ídem para Suiza
+│   │   ├── chile.ts        # Ídem para Chile
+│   │   └── index.ts        # Lista PAISES
+│   └── calculo.ts          # Cálculo compartido (página de cada país y comparativa)
+├── i18n/
+│   ├── ui.ts               # Idiomas (LOCALES) y textos genéricos de la interfaz
+│   └── utils.ts            # t(), fmt() con formato numérico por idioma, pathFor()
+├── scripts/estimador.ts    # Lógica interactiva de la página de cada país
+├── styles/global.css       # Estilos y paleta (modo claro y oscuro)
+├── layouts/Base.astro      # <html>, <head>, hreflang y navegación
+├── components/             # Navegacion (pestañas de país + banderas), secciones y Comparativa
+└── pages/
+    ├── index.astro         # / → redirige al idioma del navegador
+    └── [lang]/
+        ├── [pais].astro    # /es/spain/, /pt/portugal/…
+        ├── compare.astro   # /en/compare/…
+        └── index.astro     # /es/ → /es/spain/
 ```
 
 `¿Quién paga tu nómina_.html` es la versión original en un único HTML y se conserva como referencia.
 
 ## Actualizar los datos
 
-Todas las cifras están en `src/data/grupos.ts`, en millones de personas:
+Cada país está en `src/data/paises/<país>.ts`, con cifras en millones de personas:
 
-- `GRUPOS`: cada grupo con su lado (`pub` o `priv`), valor `v`, fuente `src` e interruptor `key`. El IMV tiene también `vP`, que cuenta personas en lugar de hogares.
-- `TOGGLES`: el texto de los interruptores. Si cambias una cifra, revisa también su `detalle`.
-- `PRESETS`: los escenarios rápidos.
-- `FUENTES`: los enlaces de la sección de fuentes.
+- `grupos`: cada grupo con su lado (`pub` o `priv`), su `categoria` (para la comparativa), su valor `v`, su fuente `src` y `toggle` (si se puede desactivar). `alt` es una forma alternativa de contarlo (p. ej. personas en lugar de hogares).
+- `toggles`: el texto de los interruptores. Si cambias una cifra, revisa también su `detalle`.
+- `presets`: qué grupos quita cada escenario rápido y qué descuento aplica. Los cuatro escenarios son comunes a todos los países para que la comparativa tenga sentido.
+- `cabecera`, `metodo`, `advertencias`, `fechaDatos` y `pie` llevan fechas o cifras en el texto: revísalos al actualizar.
 
-Hay textos que también llevan fechas o cifras y que conviene revisar: el pie en `src/pages/index.astro`, la cabecera en `Cabecera.astro` y la advertencia sobre fechas en `Advertencias.astro`.
+Todos los textos de un país son objetos `{ es, en, pt }`.
+
+## Añadir un país
+
+1. Copia `src/data/paises/espana.ts` a un archivo nuevo, cambia `slug` (será la URL) y rellena datos, textos y fuentes.
+2. Añádelo a `PAISES` en `src/data/paises/index.ts`.
+
+Las páginas, la pestaña de la cabecera y la columna de la comparativa se generan solas.
+
+## Añadir un idioma
+
+1. Añade su código a `LOCALES` en `src/i18n/ui.ts` y a `locales` en `astro.config.mjs`.
+2. Añade su bloque de textos a `UI` (con `intl`, el código para formatear números).
+3. Añade su bandera SVG en `BANDERAS` de `src/components/Navegacion.astro`.
+4. Añade la traducción a todos los textos `{ es, en, pt }` de cada país. TypeScript avisa de los que falten.
 
 ## Cálculo
 
@@ -61,7 +89,7 @@ Hay textos que también llevan fechas o cifras y que conviene revisar: el pie en
             ÷ (total público + total privado)
 ```
 
-Los asalariados privados se obtienen restando los asalariados públicos al total de asalariados de la EPA.
+Los asalariados privados se obtienen restando el empleo público al total de asalariados de la encuesta de población activa de cada país (EPA en España, Inquérito ao Emprego en Portugal, SAKE en Suiza, ENE en Chile).
 
 ## Despliegue
 
@@ -69,9 +97,4 @@ Los asalariados privados se obtienen restando los asalariados públicos al total
 
 ## Fuentes de datos
 
-- [INE · Encuesta de Población Activa, 2.º trimestre 2026](https://www.ine.es/dyngs/Prensa/EPA2T26.pdf)
-- [esdiario · Asalariados y no asalariados, EPA 2T 2026](https://www.esdiario.com/economia/260728/194255/mercado-laboral-bate-record-ocupacion-subempleo-sigue-alza-indefinidos.html)
-- [Europa Press · Nómina de pensiones de junio 2026](https://www.bolsamania.com/noticias_print/economia/economia--amp-la-seguridad-social-destina-en-junio-28432-millones-a-la-paga-ordinaria-y-la-extra-de-las-pensiones--22844972.html)
-- [Vozpópuli · Clases pasivas y no contributivas](https://www.vozpopuli.com/economia/macroeconomia/la-factura-de-las-pensiones-supera-la-barrera-de-los-16000-millones-al-mes-con-la-ultima-subida.html)
-- [Roams · Beneficiarios de prestación por desempleo (SEPE, mayo 2026)](https://roams.es/actualidad/finanzas/cuando-se-cobra-paro-agosto-2026-caixabank-santander-bbva-bancos/)
-- [La Moncloa · Ingreso Mínimo Vital, junio 2026](https://www.lamoncloa.gob.es/serviciosdeprensa/notasprensa/inclusion/Paginas/2026/070726-ingreso-minimo-vital-junio.aspx)
+Las fuentes de cada país están en la sección `fuentes` de su archivo y aparecen al final de su página.

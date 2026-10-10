@@ -1,0 +1,10 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { PAISES } from '../../data/paises';
+import { LOCALES, type Locale } from '../../i18n/ui';
+import { pathFor } from '../../i18n/utils';
+
+export const getStaticPaths = (() => LOCALES.map((lang) => ({ params: { lang } }))) satisfies GetStaticPaths;
+
+return Astro.redirect(pathFor(Astro.params.lang as Locale, PAISES[0].slug));
+---

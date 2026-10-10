@@ -1,21 +1,28 @@
 ---
 import '../styles/global.css';
+import Navegacion from '../components/Navegacion.astro';
+import { LOCALES, type Locale } from '../i18n/ui';
+import { pathFor } from '../i18n/utils';
 
 interface Props {
+  lang: Locale;
+  /** Slug del país o 'compare' */
+  ruta: string;
   title: string;
   description?: string;
 }
 
-const { title, description } = Astro.props;
+const { lang, ruta, title, description } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="es">
+<html lang={lang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <meta name="generator" content={Astro.generator} />
     {description && <meta name="description" content={description} />}
+    {LOCALES.map((l) => <link rel="alternate" hreflang={l} href={pathFor(l, ruta)} />)}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{title}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -26,6 +33,7 @@ const { title, description } = Astro.props;
     />
   </head>
   <body>
+    <Navegacion lang={lang} ruta={ruta} />
     <slot />
   </body>
 </html>
