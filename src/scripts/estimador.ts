@@ -1,4 +1,4 @@
-import { activo, calcular, ESTADO_INICIAL, valor } from '../data/calculo';
+import { activo, calcular, ESTADO_INICIAL, estadoPreset, valor } from '../data/calculo';
 import type { Estado, Grupo, Pais, PresetId } from '../data/paises/types';
 import type { Locale } from '../i18n/ui';
 import { fmt as fmtL, plantilla, t } from '../i18n/utils';
@@ -74,7 +74,8 @@ function render() {
   $('bPub').style.flexBasis = pp + '%';
   $('bPriv').style.flexBasis = pv + '%';
   $('bar100').setAttribute('aria-label', plantilla(tx.barAria, { pub: fmt(pp, 0), priv: fmt(pv, 0) }));
-  $('ratio').innerHTML = r >= 1 ? plantilla(tx.ratioPriv, { x: fmt(r, 2) }) : plantilla(tx.ratioPub, { x: fmt(1 / r, 2) });
+  // Con el descuento al máximo pub puede quedar en 0 y el ratio sería infinito.
+  $('ratio').innerHTML = !pub ? '' : r >= 1 ? plantilla(tx.ratioPriv, { x: fmt(r, 2) }) : plantilla(tx.ratioPub, { x: fmt(1 / r, 2) });
 
   // filas
   const rows = $('rows');
@@ -139,8 +140,7 @@ $<HTMLInputElement>('sOver').addEventListener('input', (e) => {
 });
 document.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((b) =>
   b.addEventListener('click', () => {
-    const p = cfg.presets[b.dataset.preset as PresetId];
-    Object.assign(state, { off: [...p.apagados], alt: [], over: p.over });
+    Object.assign(state, estadoPreset(cfg.presets, b.dataset.preset as PresetId));
     render();
   }),
 );

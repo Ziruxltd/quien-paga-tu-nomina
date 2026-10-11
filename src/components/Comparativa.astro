@@ -16,12 +16,12 @@ const f = (x: number, d = 1) => fmt(lang, x, d);
 
 const escenarios = PRESET_IDS.map((id) => ({
   id,
-  filas: PAISES.map((p) => ({ pais: p, r: calcular(p.grupos, estadoPreset(p, id)) })),
+  filas: PAISES.map((p) => ({ pais: p, r: calcular(p.grupos, estadoPreset(p.presets, id)) })),
 }));
 
 // Por categoría, escenario base
 const base = PAISES.map((p) => {
-  const e = estadoPreset(p, 'base');
+  const e = estadoPreset(p.presets, 'base');
   const r = calcular(p.grupos, e);
   const suma = (c: Categoria) => {
     const gs = p.grupos.filter((g) => g.categoria === c && activo(g, e));

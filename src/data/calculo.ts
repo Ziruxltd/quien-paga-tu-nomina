@@ -3,10 +3,10 @@ import type { Estado, Grupo, Pais, PresetId } from './paises/types';
 
 export const ESTADO_INICIAL: Estado = { off: [], alt: [], over: 0 };
 
-export const estadoPreset = (pais: Pais, id: PresetId): Estado => ({
-  off: [...pais.presets[id].apagados],
+export const estadoPreset = (presets: Pais['presets'], id: PresetId): Estado => ({
+  off: [...presets[id].apagados],
   alt: [],
-  over: pais.presets[id].over,
+  over: presets[id].over,
 });
 
 export const activo = (g: Grupo, e: Estado) => !g.toggle || !e.off.includes(g.id);
