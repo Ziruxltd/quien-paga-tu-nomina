@@ -24,7 +24,7 @@ interface Props {
 
 const { lang, pais } = Astro.props;
 const tx = t(lang);
-const cfg: Config = { lang, slug: pais.slug, escalaMax: pais.escalaMax, grupos: pais.grupos, presets: pais.presets };
+const cfg: Config = { lang, slug: pais.slug, escalaMax: pais.escalaMax, overMax: pais.overMax, grupos: pais.grupos, presets: pais.presets };
 // Escapar "<" evita que el JSON cierre la etiqueta <script>.
 const cfgJson = JSON.stringify(cfg).replace(/</g, '\\u003c');
 ---

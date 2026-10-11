@@ -8,6 +8,7 @@ export interface Config {
   lang: Locale;
   slug: string;
   escalaMax: number;
+  overMax: number;
   grupos: Grupo[];
   presets: Pais['presets'];
 }
@@ -18,12 +19,37 @@ const cfg: Config = JSON.parse($('cfg').textContent!);
 const { lang, grupos, escalaMax: MAX } = cfg;
 const tx = t(lang);
 const fmt = (x: number, d = 1) => fmtL(lang, x, d);
-const CLAVE = 'ipp-state-' + cfg.slug;
+// Sube VERSION_ESTADO al cambiar la forma de Estado: los estados guardados con otra versión se ignoran.
+const VERSION_ESTADO = 1;
+const CLAVE = `ipp-state-v${VERSION_ESTADO}-${cfg.slug}`;
+const CLAVE_SIN_VERSION = 'ipp-state-' + cfg.slug;
 
-const state: Estado = { ...ESTADO_INICIAL, off: [], alt: [] };
+const ids = new Set(grupos.map((g) => g.id));
+const listaIds = (x: unknown) => (Array.isArray(x) ? [...new Set(x.filter((id): id is string => typeof id === 'string' && ids.has(id)))] : []);
+
+/** Rehace un Estado válido a partir de lo guardado; descarta campos desconocidos o con tipo incorrecto. */
+function validarEstado(s: unknown): Estado | null {
+  if (!s || typeof s !== 'object') return null;
+  const { off, alt, over } = s as Record<string, unknown>;
+  return {
+    off: listaIds(off),
+    alt: listaIds(alt),
+    over: typeof over === 'number' && Number.isFinite(over) ? Math.min(Math.max(over, 0), cfg.overMax) : ESTADO_INICIAL.over,
+  };
+}
+
+function leer(clave: string) {
+  try {
+    return validarEstado(JSON.parse(localStorage.getItem(clave) || 'null'));
+  } catch (e) {
+    return null;
+  }
+}
+
+// La clave sin versión tenía la misma forma que la v1: se migra una vez y se borra.
+const state: Estado = leer(CLAVE) ?? leer(CLAVE_SIN_VERSION) ?? { ...ESTADO_INICIAL, off: [], alt: [] };
 try {
-  const s = JSON.parse(localStorage.getItem(CLAVE) || 'null');
-  if (s && Array.isArray(s.off) && Array.isArray(s.alt)) Object.assign(state, s);
+  localStorage.removeItem(CLAVE_SIN_VERSION);
 } catch (e) {}
 
 const val = (g: Grupo) => valor(g, state);

@@ -23,7 +23,8 @@ Está hecha con [Astro](https://astro.build) y se genera como un sitio estático
 ```sh
 npm install        # instala las dependencias
 npm run dev        # servidor de desarrollo en http://localhost:4321
-npm run build      # genera el sitio estático en dist/
+npm run check      # comprueba los tipos (traducciones incompletas, etc.)
+npm run build      # comprueba los tipos y genera el sitio estático en dist/
 npm run preview    # sirve dist/ para revisarlo antes de publicar
 ```
 
@@ -80,7 +81,7 @@ Las páginas, la pestaña de la cabecera y la columna de la comparativa se gener
 1. Añade su código a `LOCALES` en `src/i18n/ui.ts` y a `locales` en `astro.config.mjs`.
 2. Añade su bloque de textos a `UI` (con `intl`, el código para formatear números).
 3. Añade su bandera SVG en `BANDERAS` de `src/components/Navegacion.astro`.
-4. Añade la traducción a todos los textos `{ es, en, pt }` de cada país. TypeScript avisa de los que falten.
+4. Añade la traducción a todos los textos `{ es, en, pt }` de cada país. `npm run check` (y `npm run build`) avisa de los que falten.
 
 ## Cálculo
 
